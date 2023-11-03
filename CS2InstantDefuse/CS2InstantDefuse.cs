@@ -12,16 +12,16 @@ namespace CS2InstantDefuse
     public class CS2InstantDefuse : BasePlugin
     {
         public override string ModuleName => "CS2InstantDefuse";
-        public override string ModuleVersion => "1.0.0";
+        public override string ModuleVersion => "1.0.1";
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
 
         private float _bombPlantedTime = float.NaN;
         private bool _bombTicking = false;
-        private int _molotovThread = 0;
-        private int _heThread = 0;
+        private int _molotovThreat = 0;
+        private int _heThreat = 0;
 
-        private List<int> _infernoThread = new List<int>();
+        private List<int> _infernoThreat = new List<int>();
 
         public override void Load(bool hotReload)
         {
@@ -40,28 +40,46 @@ namespace CS2InstantDefuse
 
             this.RegisterEventHandler<EventHegrenadeDetonate>(OnHeGrenadeDetonate);
             this.RegisterEventHandler<EventMolotovDetonate>(OnMolotovDetonate);
+
+            // Comment in if you need to debug the defuse stuff.
+            //this.RegisterEventHandler<EventBombBeep>(OnBombBeep);
         }
-        
+
+        [GameEventHandler]
+        private HookResult OnBombBeep(EventBombBeep @event, GameEventInfo info)
+        {
+            var plantedBomb = this.FindPlantedBomb();
+            if (plantedBomb == null)
+            {
+                this.Log("Planted bomb is null!");
+                return HookResult.Continue;
+            }
+
+            Server.PrintToChatAll($"{plantedBomb.TimerLength - (Server.CurrentTime - this._bombPlantedTime)}");
+            return HookResult.Continue;
+        }
 
         [GameEventHandler]
         private HookResult OnGrenadeThrown(EventGrenadeThrown @event, GameEventInfo info)
         {
-            if(@event.Weapon == "smokegrenade" || @event.Weapon == "flashbang" || @event.Weapon == "decoy")
+            //this.Log($"OnGrenadeThrown: {@event.Weapon} - isBot: {@event.Userid?.IsBot}");
+
+            if (@event.Weapon == "smokegrenade" || @event.Weapon == "flashbang" || @event.Weapon == "decoy")
             {
                 return HookResult.Continue;
             }
 
             if(@event.Weapon == "hegrenade")
             {
-                this._heThread++;
+                this._heThreat++;
             }
 
             if(@event.Weapon == "incgrenade" || @event.Weapon == "molotov")
             {
-                this._molotovThread++;
+                this._molotovThreat++;
             }
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
             return HookResult.Continue;
         }
@@ -94,9 +112,9 @@ namespace CS2InstantDefuse
                 return HookResult.Continue;
             }
 
-            this._infernoThread.Add(@event.Entityid);
+            this._infernoThreat.Add(@event.Entityid);
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
             return HookResult.Continue;
         }
@@ -104,9 +122,9 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnInfernoExtinguish(EventInfernoExtinguish @event, GameEventInfo info)
         {
-            this._infernoThread.Remove(@event.Entityid);
+            this._infernoThreat.Remove(@event.Entityid);
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
             return HookResult.Continue;
         }
@@ -114,9 +132,9 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnInfernoExpire(EventInfernoExpire @event, GameEventInfo info)
         {
-            this._infernoThread.Remove(@event.Entityid);
+            this._infernoThreat.Remove(@event.Entityid);
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
             return HookResult.Continue;
         }
@@ -124,9 +142,12 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnHeGrenadeDetonate(EventHegrenadeDetonate @event, GameEventInfo info)
         {
-            this._heThread--;
+            if(this._heThreat > 0)
+            {
+                this._heThreat--;
+            }
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
             return HookResult.Continue;
         }
@@ -134,9 +155,12 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnMolotovDetonate(EventMolotovDetonate @event, GameEventInfo info)
         {
-            this._molotovThread--;
+            if (this._molotovThreat > 0)
+            {
+                this._molotovThreat--;
+            }
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
             return HookResult.Continue;
         }
@@ -148,9 +172,9 @@ namespace CS2InstantDefuse
             this._bombPlantedTime = float.NaN;
             this._bombTicking = false;
 
-            this._heThread = 0;
-            this._molotovThread = 0;
-            this._infernoThread = new List<int>();
+            this._heThreat = 0;
+            this._molotovThreat = 0;
+            this._infernoThreat = new List<int>();
 
             return HookResult.Continue;
         }
@@ -193,12 +217,12 @@ namespace CS2InstantDefuse
                 return false;
             }
 
-            this.PrintThreadLevel();
+            this.PrintThreatLevel();
 
-            if(this._heThread != 0 || this._molotovThread != 0 || this._infernoThread.Any())
+            if(this._heThreat > 0 || this._molotovThreat > 0 || this._infernoThreat.Any())
             {
-                Server.PrintToChatAll($"Instant Defuse not possible because a grenade thread is active!");
-                this.Log($"Instant Defuse not possible because a grenade thread is active!");
+                Server.PrintToChatAll($"Instant Defuse not possible because a grenade threat is active!");
+                this.Log($"Instant Defuse not possible because a grenade threat is active!");
                 return false;
             }
 
@@ -223,7 +247,14 @@ namespace CS2InstantDefuse
 
             var bombTimeUntilDetonation = plantedBomb.TimerLength - (Server.CurrentTime - this._bombPlantedTime);
 
-            bool bombCanBeDefusedInTime = (bombTimeUntilDetonation - plantedBomb.DefuseLength) >= 0.0f;
+            var defuseLength = plantedBomb.DefuseLength;
+            if(defuseLength != 5 && defuseLength != 10)
+            {
+                defuseLength = player.PawnHasDefuser ? 5 : 10;
+            }
+            this.Log($"DefuseLength: {defuseLength}");
+
+            bool bombCanBeDefusedInTime = (bombTimeUntilDetonation - defuseLength) >= 0.0f;
 
             if(!bombCanBeDefusedInTime)
             {
@@ -272,9 +303,9 @@ namespace CS2InstantDefuse
             return plantedBombList.FirstOrDefault();
         }
 
-        private void PrintThreadLevel()
+        private void PrintThreatLevel()
         {
-            this.Log($"Thread-Levels: HE [{this._heThread}], Molotov [{this._molotovThread}], Inferno [{this._infernoThread.Count}]");
+            this.Log($"Threat-Levels: HE [{this._heThreat}], Molotov [{this._molotovThreat}], Inferno [{this._infernoThreat.Count}]");
         }
 
         private string PluginInfo()
