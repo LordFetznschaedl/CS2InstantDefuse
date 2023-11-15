@@ -1,4 +1,4 @@
-﻿using CounterStrikeSharp.API;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Memory;
@@ -12,7 +12,7 @@ namespace CS2InstantDefuse
     public class CS2InstantDefuse : BasePlugin
     {
         public override string ModuleName => "CS2InstantDefuse";
-        public override string ModuleVersion => "1.0.1";
+        public override string ModuleVersion => "1.1.0";
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
 
@@ -20,6 +20,8 @@ namespace CS2InstantDefuse
         private bool _bombTicking = false;
         private int _molotovThreat = 0;
         private int _heThreat = 0;
+
+        private bool _debug = false;
 
         private List<int> _infernoThreat = new List<int>();
 
@@ -42,7 +44,11 @@ namespace CS2InstantDefuse
             this.RegisterEventHandler<EventMolotovDetonate>(OnMolotovDetonate);
 
             // Comment in if you need to debug the defuse stuff.
-            //this.RegisterEventHandler<EventBombBeep>(OnBombBeep);
+            if (this._debug)
+            {
+                this.RegisterEventHandler<EventBombBeep>(OnBombBeep);
+            }
+            
         }
 
         [GameEventHandler]
@@ -62,7 +68,7 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnGrenadeThrown(EventGrenadeThrown @event, GameEventInfo info)
         {
-            //this.Log($"OnGrenadeThrown: {@event.Weapon} - isBot: {@event.Userid?.IsBot}");
+            this.Debug($"OnGrenadeThrown: {@event.Weapon} - isBot: {@event.Userid?.IsBot}"); 
 
             if (@event.Weapon == "smokegrenade" || @event.Weapon == "flashbang" || @event.Weapon == "decoy")
             {
@@ -87,6 +93,8 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnInfernoStartBurn(EventInfernoStartburn @event, GameEventInfo info)
         {
+            this.Debug($"OnInfernoStartBurn");
+            
             var infernoPosVector = new Vector3(@event.X, @event.Y, @event.Z);
 
             var plantedBomb = this.FindPlantedBomb();
@@ -122,6 +130,8 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnInfernoExtinguish(EventInfernoExtinguish @event, GameEventInfo info)
         {
+            this.Debug($"OnInfernoExtinguish");
+            
             this._infernoThreat.Remove(@event.Entityid);
 
             this.PrintThreatLevel();
@@ -132,6 +142,8 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnInfernoExpire(EventInfernoExpire @event, GameEventInfo info)
         {
+            this.Debug($"OnInfernoExpire");
+            
             this._infernoThreat.Remove(@event.Entityid);
 
             this.PrintThreatLevel();
@@ -142,7 +154,9 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnHeGrenadeDetonate(EventHegrenadeDetonate @event, GameEventInfo info)
         {
-            if(this._heThreat > 0)
+            this.Debug($"OnHeGrenadeDetonate");
+            
+            if (this._heThreat > 0)
             {
                 this._heThreat--;
             }
@@ -155,6 +169,8 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnMolotovDetonate(EventMolotovDetonate @event, GameEventInfo info)
         {
+            this.Debug($"OnMolotovDetonate");
+            
             if (this._molotovThreat > 0)
             {
                 this._molotovThreat--;
@@ -169,6 +185,8 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
         {
+            this.Debug($"OnRoundStart");
+            
             this._bombPlantedTime = float.NaN;
             this._bombTicking = false;
 
@@ -182,6 +200,8 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnBombPlanted(EventBombPlanted @event, GameEventInfo info)
         {
+            this.Debug($"OnBombPlanted");
+            
             this._bombPlantedTime = Server.CurrentTime;
             this._bombTicking = true;
 
@@ -191,7 +211,9 @@ namespace CS2InstantDefuse
         [GameEventHandler]
         private HookResult OnBombBeginDefuse(EventBombBegindefuse @event, GameEventInfo info)
         {
-            if(@event.Userid == null)
+            this.Debug($"OnBombBeginDefuse");
+
+            if (@event.Userid == null)
             {
                 return HookResult.Continue;
             }
@@ -317,6 +339,18 @@ namespace CS2InstantDefuse
         {
             Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine($"[{this.ModuleName}] {message}");
+            Console.ResetColor();
+        }
+
+        private void Debug(string message)
+        {
+            if(!this._debug) 
+            {
+                return;
+            }
+
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine($"[{this.ModuleName}][DEBUG] {message}");
             Console.ResetColor();
         }
     }
