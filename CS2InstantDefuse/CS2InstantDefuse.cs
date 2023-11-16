@@ -282,6 +282,10 @@ namespace CS2InstantDefuse
             {
                 Server.PrintToChatAll($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
                 this.Log($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
+                Server.NextFrame(() =>
+                {
+                    plantedBomb.C4Blow = 1.0f;
+                });
                 return false;
             }
 
