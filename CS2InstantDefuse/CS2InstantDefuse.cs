@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
@@ -9,10 +10,11 @@ using System.Runtime.InteropServices;
 
 namespace CS2InstantDefuse
 {
+    [MinimumApiVersion(84)]
     public class CS2InstantDefuse : BasePlugin
     {
         public override string ModuleName => "CS2InstantDefuse";
-        public override string ModuleVersion => "1.1.0";
+        public override string ModuleVersion => "1.1.1";
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
 
