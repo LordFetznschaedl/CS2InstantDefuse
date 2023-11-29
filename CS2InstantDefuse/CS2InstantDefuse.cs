@@ -16,7 +16,7 @@ namespace CS2InstantDefuse
     public class CS2InstantDefuse : BasePlugin, IPluginConfig<CS2InstantDefuseConfig>
     {
         public override string ModuleName => "CS2InstantDefuse";
-        public override string ModuleVersion => "1.1.1";
+        public override string ModuleVersion => "1.2.0";
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
 
