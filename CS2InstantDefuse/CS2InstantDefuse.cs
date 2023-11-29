@@ -19,6 +19,8 @@ namespace CS2InstantDefuse
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
 
+        public string PluginPrefix = $"[{ChatColors.Olive}CS2InstantDefuse{ChatColors.White}]";
+
         private float _bombPlantedTime = float.NaN;
         private bool _bombTicking = false;
         private int _molotovThreat = 0;
@@ -248,7 +250,7 @@ namespace CS2InstantDefuse
 
             if(this._heThreat > 0 || this._molotovThreat > 0 || this._infernoThreat.Any())
             {
-                Server.PrintToChatAll($"Instant Defuse not possible because a grenade threat is active!");
+                Server.PrintToChatAll($"{this.PluginPrefix} Instant Defuse not possible because a grenade threat is active!");
                 this.Logger?.LogInformation($"Instant Defuse not possible because a grenade threat is active!");
                 return false;
             }
@@ -285,7 +287,7 @@ namespace CS2InstantDefuse
 
             if(!bombCanBeDefusedInTime)
             {
-                Server.PrintToChatAll($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
+                Server.PrintToChatAll($"{this.PluginPrefix} Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
                 this.Logger?.LogInformation($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
                 return false;
             }
@@ -294,7 +296,7 @@ namespace CS2InstantDefuse
             {
                 plantedBomb.DefuseCountDown = 0;
 
-                Server.PrintToChatAll($"Instant Defuse was successful! Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb.");
+                Server.PrintToChatAll($"{this.PluginPrefix} Instant Defuse was successful! Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb.");
                 this.Logger?.LogInformation($"Instant Defuse was successful! [{bombTimeUntilDetonation.ToString("n3")}s left]");
             });
             
