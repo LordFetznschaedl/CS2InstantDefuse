@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
+using CS2InstantDefuse.Configs;
 using Microsoft.Extensions.Logging;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
@@ -12,12 +13,14 @@ using System.Runtime.InteropServices;
 namespace CS2InstantDefuse
 {
     [MinimumApiVersion(84)]
-    public class CS2InstantDefuse : BasePlugin
+    public class CS2InstantDefuse : BasePlugin, IPluginConfig<CS2InstantDefuseConfig>
     {
         public override string ModuleName => "CS2InstantDefuse";
         public override string ModuleVersion => "1.1.1";
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
+
+        public CS2InstantDefuseConfig Config { get; set; }
 
         public string PluginPrefix = $"[{ChatColors.Olive}CS2InstantDefuse{ChatColors.White}]";
 
@@ -29,6 +32,11 @@ namespace CS2InstantDefuse
         private bool _debug = false;
 
         private List<int> _infernoThreat = new List<int>();
+
+        public void OnConfigParsed(CS2InstantDefuseConfig config)
+        {
+            this.Config = config;
+        }
 
         public override void Load(bool hotReload)
         {
@@ -47,8 +55,6 @@ namespace CS2InstantDefuse
 
             this.RegisterEventHandler<EventHegrenadeDetonate>(OnHeGrenadeDetonate);
             this.RegisterEventHandler<EventMolotovDetonate>(OnMolotovDetonate);
-            
-            
 
             // Comment in if you need to debug the defuse stuff.
             if (this._debug)
@@ -58,7 +64,7 @@ namespace CS2InstantDefuse
             
         }
 
-        [GameEventHandler]
+
         private HookResult OnBombBeep(EventBombBeep @event, GameEventInfo info)
         {
             var plantedBomb = this.FindPlantedBomb();
@@ -72,7 +78,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnGrenadeThrown(EventGrenadeThrown @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnGrenadeThrown: {@event.Weapon} - isBot: {@event.Userid?.IsBot}"); 
@@ -97,7 +102,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnInfernoStartBurn(EventInfernoStartburn @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnInfernoStartBurn");
@@ -120,7 +124,7 @@ namespace CS2InstantDefuse
 
             var distance = Vector3.Distance(infernoPosVector, plantedBombVector3);
 
-            this.Logger?.LogInformation($"Inferno Distance to bomb: {distance}");
+            this.Logger?.LogDebug($"Inferno Distance to bomb: {distance}");
 
             if(distance > 250) 
             {
@@ -134,7 +138,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnInfernoExtinguish(EventInfernoExtinguish @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnInfernoExtinguish");
@@ -146,7 +149,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnInfernoExpire(EventInfernoExpire @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnInfernoExpire");
@@ -158,7 +160,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnHeGrenadeDetonate(EventHegrenadeDetonate @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnHeGrenadeDetonate");
@@ -173,7 +174,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnMolotovDetonate(EventMolotovDetonate @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnMolotovDetonate");
@@ -188,8 +188,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-
-        [GameEventHandler]
         private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnRoundStart");
@@ -204,7 +202,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnBombPlanted(EventBombPlanted @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnBombPlanted");
@@ -215,7 +212,6 @@ namespace CS2InstantDefuse
             return HookResult.Continue;
         }
 
-        [GameEventHandler]
         private HookResult OnBombBeginDefuse(EventBombBegindefuse @event, GameEventInfo info)
         {
             this.Logger?.LogDebug($"OnBombBeginDefuse");
@@ -258,19 +254,19 @@ namespace CS2InstantDefuse
             var plantedBomb = this.FindPlantedBomb();
             if(plantedBomb == null)
             {
-                this.Logger?.LogInformation("Planted bomb is null!");
+                this.Logger?.LogWarning("Planted bomb is null!");
                 return false;
             }
 
             if(plantedBomb.CannotBeDefused)
             {
-                this.Logger?.LogInformation("Planted bomb can not be defused!");
+                this.Logger?.LogWarning("Planted bomb can not be defused!");
                 return false;
             }
 
             if(this.TeamHasAlivePlayers(CsTeam.Terrorist))
             {
-                this.Logger?.LogInformation($"Terrorists are still alive");
+                this.Logger?.LogWarning($"Terrorists are still alive");
                 return false;
             }
 
@@ -281,7 +277,7 @@ namespace CS2InstantDefuse
             {
                 defuseLength = player.PawnHasDefuser ? 5 : 10;
             }
-            this.Logger?.LogInformation($"DefuseLength: {defuseLength}");
+            this.Logger?.LogDebug($"DefuseLength: {defuseLength}");
 
             bool bombCanBeDefusedInTime = (bombTimeUntilDetonation - defuseLength) >= 0.0f;
 
@@ -291,11 +287,14 @@ namespace CS2InstantDefuse
                 Server.PrintToChatAll($"{this.PluginPrefix} Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
                 this.Logger?.LogInformation($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
             
-                Server.NextFrame(() =>
+                if(this.Config.DetonateBombIfNotEnoughTimeForDefuse) 
                 {
-                    plantedBomb.C4Blow = 1.0f;
-                });
-                
+                    Server.NextFrame(() =>
+                    {
+                        plantedBomb.C4Blow = 1.0f;
+                    });
+                }
+
                 return false;
             }
 
@@ -316,7 +315,7 @@ namespace CS2InstantDefuse
 
             if (!playerList.Any())
             {
-                this.Logger?.LogInformation("No player entities have been found!");
+                this.Logger?.LogWarning("No player entities have been found!");
                 throw new Exception("NNo player entities have been found!");
             }
 
@@ -329,7 +328,7 @@ namespace CS2InstantDefuse
 
             if (!plantedBombList.Any())
             {
-                this.Logger?.LogInformation("No planted bomb entities have been found!");
+                this.Logger?.LogWarning("No planted bomb entities have been found!");
                 return null;
             }
 
@@ -338,12 +337,14 @@ namespace CS2InstantDefuse
 
         private void PrintThreatLevel()
         {
-            this.Logger?.LogInformation($"Threat-Levels: HE [{this._heThreat}], Molotov [{this._molotovThreat}], Inferno [{this._infernoThreat.Count}]");
+            this.Logger?.LogDebug($"Threat-Levels: HE [{this._heThreat}], Molotov [{this._molotovThreat}], Inferno [{this._infernoThreat.Count}]");
         }
 
         private string PluginInfo()
         {
             return $"Plugin: {this.ModuleName} - Version: {this.ModuleVersion} by {this.ModuleAuthor}";
         }
+
+
     }
 }
