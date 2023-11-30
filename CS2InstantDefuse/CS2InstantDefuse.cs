@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace CS2InstantDefuse
 {
-    [MinimumApiVersion(84)]
+    [MinimumApiVersion(86)]
     public class CS2InstantDefuse : BasePlugin, IPluginConfig<CS2InstantDefuseConfig>
     {
         public override string ModuleName => "CS2InstantDefuse";
@@ -22,7 +22,7 @@ namespace CS2InstantDefuse
 
         public CS2InstantDefuseConfig Config { get; set; }
 
-        public string PluginPrefix = $"[{ChatColors.Olive}CS2InstantDefuse{ChatColors.White}]";
+        public string PluginPrefix = $"[{ChatColors.DarkBlue}CS2InstantDefuse{ChatColors.White}]";
 
         private float _bombPlantedTime = float.NaN;
         private bool _bombTicking = false;
@@ -284,7 +284,7 @@ namespace CS2InstantDefuse
             if(!bombCanBeDefusedInTime)
             {
                 
-                Server.PrintToChatAll($"{this.PluginPrefix} Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
+                Server.PrintToChatAll($"{this.PluginPrefix} Defuse started with {ChatColors.Darkred}{bombTimeUntilDetonation.ToString("n3")} seconds{ChatColors.White} left on the bomb. Not enough time left!");
                 this.Logger?.LogInformation($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
             
                 if(this.Config.DetonateBombIfNotEnoughTimeForDefuse) 
@@ -302,7 +302,7 @@ namespace CS2InstantDefuse
             {
                 plantedBomb.DefuseCountDown = 0;
 
-                Server.PrintToChatAll($"{this.PluginPrefix} Instant Defuse was successful! Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb.");
+                Server.PrintToChatAll($"{this.PluginPrefix} Instant Defuse was successful! Defuse started with {ChatColors.Green}{bombTimeUntilDetonation.ToString("n3")} seconds{ChatColors.White} left on the bomb.");
                 this.Logger?.LogInformation($"Instant Defuse was successful! [{bombTimeUntilDetonation.ToString("n3")}s left]");
             });
             
