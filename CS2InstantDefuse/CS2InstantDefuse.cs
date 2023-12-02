@@ -20,7 +20,7 @@ namespace CS2InstantDefuse
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive and no utility is in use";
 
-        public CS2InstantDefuseConfig Config { get; set; }
+        public CS2InstantDefuseConfig Config { get; set; } = new CS2InstantDefuseConfig();
 
         public string PluginPrefix = $"[{ChatColors.DarkBlue}CS2InstantDefuse{ChatColors.White}]";
 
@@ -35,6 +35,10 @@ namespace CS2InstantDefuse
 
         public void OnConfigParsed(CS2InstantDefuseConfig config)
         {
+            if (config.Version < this.Config.Version)
+            {
+                this.Logger?.LogWarning($"The plugin configuration is out of date. Consider updating the config. [Current Version: {config.Version} - Plugin Version: {this.Config.Version}]");
+            }
             this.Config = config;
         }
 

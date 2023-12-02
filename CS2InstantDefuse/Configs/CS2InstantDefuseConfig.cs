@@ -9,12 +9,10 @@ namespace CS2InstantDefuse.Configs
 {
     public class CS2InstantDefuseConfig : BasePluginConfig
     {
+        public override int Version { get; set; } = 1;
         public bool DetonateBombIfNotEnoughTimeForDefuse { get; set; } = true;
 
 
-        public CS2InstantDefuseConfig()
-        {
-
-        }
+        public CS2InstantDefuseConfig() {}
     }
 }
