@@ -16,3 +16,7 @@ This plugin allowes the bomb to be instantly defused if the following criteria i
 ---
 # installation:  
 Extract the `addons` folder to the `/csgo/` directory of the dedicated server.  
+
+---
+# special thanks:  
+[B3none](https://github.com/B3none): This plugin is based on [his instant defuse plugin for CSGO](https://github.com/B3none/csgo-retakes-instadefuse)
