@@ -11,10 +11,17 @@ namespace CS2InstantDefuse.Configs
     {
         public bool DetonateBombIfNotEnoughTimeForDefuse { get; set; } = true;
 
+        public bool EnableMolotovThreatCheck { get; set; } = true;
+        public bool EnableHEThreatCheck { get; set; } = true;
+        public bool EnableAliveTerroristCheck { get; set; } = true;
+
+
+        public bool Debug { get; set; } = false;
+
 
         public CS2InstantDefuseConfig() 
         {
-            this.Version = 1;
+            this.Version = 2;
         }
     }
 }
