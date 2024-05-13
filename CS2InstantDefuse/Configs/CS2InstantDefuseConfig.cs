@@ -14,14 +14,16 @@ namespace CS2InstantDefuse.Configs
         public bool EnableMolotovThreatCheck { get; set; } = true;
         public bool EnableHEThreatCheck { get; set; } = true;
         public bool EnableAliveTerroristCheck { get; set; } = true;
+        public bool EnableAdditionalKitCheck { get; set; } = true;
 
 
+        public bool DebugBombBeep { get; set; } = false;
         public bool Debug { get; set; } = false;
 
 
         public CS2InstantDefuseConfig() 
         {
-            this.Version = 2;
+            this.Version = 3;
         }
     }
 }

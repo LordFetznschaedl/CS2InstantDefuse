@@ -12,11 +12,11 @@ using System.Runtime.InteropServices;
 
 namespace CS2InstantDefuse
 {
-    [MinimumApiVersion(86)]
+    [MinimumApiVersion(228)]
     public class CS2InstantDefuse : BasePlugin, IPluginConfig<CS2InstantDefuseConfig>
     {
         public override string ModuleName => "CS2InstantDefuse";
-        public override string ModuleVersion => "1.2.0";
+        public override string ModuleVersion => "1.3.0";
         public override string ModuleAuthor => "LordFetznschaedl";
         public override string ModuleDescription => "Simple Plugin that allowes the bomb to be instantly defused when no enemy is alive (configurable) and no utility is in use (configurable)";
 
@@ -60,11 +60,11 @@ namespace CS2InstantDefuse
             this.RegisterEventHandler<EventMolotovDetonate>(OnMolotovDetonate);
 
             // Comment in if you need to debug the defuse stuff.
-            if (this.Config.Debug)
+            if (this.Config.DebugBombBeep)
             {
                 this.RegisterEventHandler<EventBombBeep>(OnBombBeep);
             }
-            
+             
         }
 
 
@@ -290,11 +290,38 @@ namespace CS2InstantDefuse
             this.LogIfDebug($"DefuseLength: {defuseLength}");
 
             bool bombCanBeDefusedInTime = (bombTimeUntilDetonation - defuseLength) >= 0.0f;
+            bool bombCanBeDefusedInTimeWithKit = (bombTimeUntilDetonation - 5f) >= 0.0f;
+
+            if (this.Config.EnableAdditionalKitCheck && !bombCanBeDefusedInTime && bombCanBeDefusedInTimeWithKit && defuseLength == 10)
+            {
+                foreach(var ctPlayer in this.GetPlayerControllersOfTeam(CsTeam.CounterTerrorist))
+                {
+                    if(!ctPlayer.PawnIsAlive)
+                    {
+                        continue;
+                    }
+
+                    if (ctPlayer?.PlayerPawn?.Value?.ItemServices == null)
+                    {
+                        this.Logger?.LogError($"CT-Player has no item service");
+                        continue;
+                    }
+
+                    var itemService = new CCSPlayer_ItemServices(ctPlayer.PlayerPawn.Value.ItemServices.Handle);
+
+                    if (itemService.HasDefuser)
+                    {
+                        Server.PrintToChatAll($"{this.PluginPrefix} Bomb can not be defused in time but another {ChatColors.DarkBlue}Counter-Terrorist{ChatColors.White} player has a {ChatColors.BlueGrey}Defuse-Kit{ChatColors.White}!");
+                        this.Logger?.LogInformation("Bomb can not be defused in time but another Counter-Terrorist player has a Defuse-Kit!");
+                        return false;
+                    }
+                }
+            }
 
             if(!bombCanBeDefusedInTime)
             {
                 
-                Server.PrintToChatAll($"{this.PluginPrefix} Defuse started with {ChatColors.Darkred}{bombTimeUntilDetonation.ToString("n3")} seconds{ChatColors.White} left on the bomb. Not enough time left!");
+                Server.PrintToChatAll($"{this.PluginPrefix} Defuse started with {ChatColors.DarkRed}{bombTimeUntilDetonation.ToString("n3")} seconds{ChatColors.White} left on the bomb. Not enough time left!");
                 this.Logger?.LogInformation($"Defuse started with {bombTimeUntilDetonation.ToString("n3")} seconds left on the bomb. Not enough time left!");
             
                 if(this.Config.DetonateBombIfNotEnoughTimeForDefuse) 
@@ -321,7 +348,7 @@ namespace CS2InstantDefuse
 
         private bool TeamHasAlivePlayers(CsTeam team)
         {
-            var playerList = Utilities.GetPlayers();
+            var playerList = this.GetPlayerControllersOfTeam(team);
 
             if (!playerList.Any())
             {
@@ -354,6 +381,20 @@ namespace CS2InstantDefuse
         {
             return $"Plugin: {this.ModuleName} - Version: {this.ModuleVersion} by {this.ModuleAuthor}";
         }
+
+        private List<CCSPlayerController> GetPlayerControllersOfTeam(CsTeam team)
+        {
+            var playerList = Utilities.GetPlayers();
+
+            //Valid players
+            playerList = playerList.FindAll(x => x != null && x.IsValid && x.PlayerPawn != null && x.PlayerPawn.IsValid && x.PlayerPawn.Value != null && x.PlayerPawn.Value.IsValid);
+
+            //Team specific players
+            playerList = playerList.FindAll(x => x.TeamNum == (int)team);
+
+            return playerList ?? new List<CCSPlayerController>();
+        }
+
 
         private void LogIfDebug(string message)
         {
